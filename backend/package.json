@@ -1,0 +1,24 @@
+{
+  "name": "start-reactor-backend",
+  "version": "1.0.0",
+  "description": "Start Reactor minigame - server-authoritative game engine",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3",
+    "vitest": "^5.0.0"
+  }
+}
