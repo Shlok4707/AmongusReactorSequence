@@ -13,7 +13,8 @@ import fire from './assets/kill animation/fire.png'
 export const BACKGROUNDS = {
   'home page bg': { src: homePageBg, w: 1600, h: 900 },
   'timer bg': { src: timerBg, w: 1672, h: 941 },
-  'main game bg': { src: mainGameBg, w: 1536, h:1023  },
+  // keepTop: on wide screens, never trim more than this fraction off the top (keeps the painted sign visible)
+  'main game bg': { src: mainGameBg, w: 1536, h: 1024, keepTop: 0.06 },
   'final bg': { src: finalBg, w: 1536, h: 1024 },
 }
 

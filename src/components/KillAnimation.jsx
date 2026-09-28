@@ -23,22 +23,28 @@ export default function KillAnimation() {
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-hidden motion-safe-shake"
-      style={{ animation: `screen-shake ${D} linear forwards` }}
+      className="fixed left-0 top-0 z-50 overflow-hidden"
+      style={{ width: '100vw', height: '100vh' }}
       data-testid="kill-animation"
       role="alert"
       aria-label="Wrong square! You were killed."
     >
-      {/* dim */}
+      {/* dim — covers the whole screen and never moves */}
       <div
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(40,0,0,0.75),rgba(0,0,0,0.92))]"
-        style={{ animation: `kill-dim ${D} ease-out forwards` }}
+        className="absolute left-0 top-0 bg-[radial-gradient(ellipse_at_center,rgba(40,0,0,0.75),rgba(0,0,0,0.92))]"
+        style={{ width: '100vw', height: '100vh', animation: `kill-dim ${D} ease-out forwards` }}
       />
+
+      {/* only the fire + characters shake */}
+      <div
+        className="motion-safe-shake absolute left-0 top-0"
+        style={{ width: '100vw', height: '100vh', animation: `screen-shake ${D} linear forwards` }}
+      >
 
       {/* fire band: reveals from the right, then flows right → left for the whole 2s */}
       <div
-        className="absolute inset-x-0 top-1/2 -translate-y-1/2 overflow-hidden"
-        style={{ height: 'min(50vh, 34vw)', animation: `fire-reveal ${D} ease-out forwards` }}
+        className="absolute top-1/2 -translate-y-1/2 overflow-hidden"
+        style={{ left: '-5vw', width: '110vw', height: 'min(50vh, 34vw)', animation: `fire-reveal ${D} ease-out forwards` }}
       >
         <div
           className="flex h-full w-max"
@@ -90,10 +96,12 @@ export default function KillAnimation() {
         />
       </div>
 
-      {/* red hit flash */}
+      </div>
+
+      {/* red hit flash — covers the whole screen and never moves */}
       <div
-        className="pointer-events-none absolute inset-0 bg-red-600 mix-blend-screen"
-        style={{ animation: `red-flash ${D} linear forwards` }}
+        className="pointer-events-none absolute left-0 top-0 bg-red-600 mix-blend-screen"
+        style={{ width: '100vw', height: '100vh', animation: `red-flash ${D} linear forwards` }}
       />
     </div>
   )

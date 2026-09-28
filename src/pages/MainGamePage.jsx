@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import Stage from '../components/Stage'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import Stage, { artY } from '../components/Stage'
 import { SequenceGrid, Keypad } from '../components/Panel'
 import KillAnimation from '../components/KillAnimation'
 import { initAudio, playButtonSound, playSequenceSound } from '../audio/AudioManager'
@@ -160,53 +160,141 @@ export default function MainGamePage({ onFinish }) {
 
   return (
     <>
-      <Stage name="main game bg">
-        {/* Top-right: red 90s timer + round number */}
-        <div
-          className="absolute right-[2%] top-[3%] flex min-w-[10cqw] flex-col items-center rounded-[1cqw]
-            border-[0.2cqw] border-red-500/60 bg-black/70 px-[1.4cqw] py-[0.7cqw]
-            shadow-[0_0_2cqw_rgba(239,68,68,0.45)] backdrop-blur-sm"
-          data-testid="hud"
-        >
-          <div
-            className={`font-display text-[4.4cqw] font-black leading-none tabular-nums text-red-500
-              [text-shadow:0_0_1.2cqw_rgba(239,68,68,0.9)] ${urgent ? 'animate-[timer-urgent_1s_ease-in-out_infinite]' : ''}`}
-            data-testid="timer"
-            aria-label={`${seconds} seconds left`}
-          >
-            {seconds}
-          </div>
-          <div className="mt-[0.3cqw] font-ui text-[1.6cqw] font-bold uppercase tracking-[0.18em] text-white" data-testid="round">
-            Round {round}
-          </div>
-        </div>
-
-        {/* Two panels occupying the centre of the page */}
-        <div className="absolute left-1/2 top-[25.5%] flex -translate-x-1/2 items-start gap-[3.6cqw]">
-          <SequenceGrid total={total} shown={shown} litCell={litCell} indicatorState={indicatorState} />
-          <Keypad
-            total={total}
-            entered={entered}
-            indicatorState={indicatorState}
-            disabled={phase !== 'input'}
-            flash={flash}
-            onPress={handlePress}
+      <Stage
+        name="main game bg"
+        overlay={
+          <GameOverlay
+            seconds={seconds}
+            round={round}
+            urgent={urgent}
+            status={status}
+            phase={phase}
+            panels={(stacked) => (
+              <div
+                className={`flex ${stacked ? 'flex-col' : 'flex-row'} items-center`}
+                style={{ gap: '3.6cqw' }}
+              >
+                <SequenceGrid total={total} shown={shown} litCell={litCell} indicatorState={indicatorState} />
+                <Keypad
+                  total={total}
+                  entered={entered}
+                  indicatorState={indicatorState}
+                  disabled={phase !== 'input'}
+                  flash={flash}
+                  onPress={handlePress}
+                />
+              </div>
+            )}
           />
-        </div>
-
-        <div
-          className={`absolute left-1/2 top-[79.3%] -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-black/60 px-[1.6cqw] py-[0.35cqw]
-            font-ui text-[1.5cqw] font-bold uppercase tracking-[0.15em] ${
-              phase === 'input' ? 'text-emerald-300' : phase === 'kill' ? 'text-red-400' : 'text-sky-200'
-            }`}
-          aria-live="polite"
-          data-testid="status"
-        >
-          {status}
-        </div>
-      </Stage>
+        }
+      />
 
       {phase === 'kill' && <KillAnimation key={attempt} />}
+    </>
+  )
+}
+
+// ---------- screen-pinned layout (vw / vh only) ----------
+
+const PORTRAIT = '(max-aspect-ratio: 9/10)'
+const subscribe = (cb) => {
+  const mq = window.matchMedia(PORTRAIT)
+  mq.addEventListener('change', cb)
+  return () => mq.removeEventListener('change', cb)
+}
+const usePortrait = () => useSyncExternalStore(subscribe, () => window.matchMedia(PORTRAIT).matches)
+
+const BG = 'main game bg'
+// Painted parts of "main game bg" (fractions of the artwork):
+//   "REACTOR SEQUENCE" sign  x 18%–82%, y 7%–24.5%   |   red floor lights y 84.3%–85%
+// Everything is centred horizontally. The panels are centred in the space between the sign and
+// the status line; the status line sits at 79% (above the floor lights) and is clamped on screen.
+function GameOverlay({ seconds, round, urgent, status, phase, panels }) {
+  const portrait = usePortrait()
+  const u = portrait ? 'min(2vw, 1.15vh)' : 'min(0.85vw, 1.5vh)' // UI unit
+  const U = (n) => `calc(${u} * ${n})`
+
+  const statusY = artY(BG, 0.79, { max: '95vh' })
+  const panelsTop = portrait ? '33vh' : artY(BG, 0.265, { min: '2vh' })
+  const panelsBottom = `calc(${statusY} - ${U(2.4)})`
+
+  const statusColor = phase === 'input' ? 'text-emerald-300' : phase === 'kill' ? 'text-red-400' : 'text-sky-200'
+
+  return (
+    <>
+      {/* Phones held upright only show the middle of the painted sign, so draw the full name there */}
+      {portrait && (
+        <div
+          className="absolute flex -translate-x-1/2 items-center justify-center rounded-[2vw] border-2 border-cyan-300/80 bg-[#050d1a]"
+          style={{ left: '50vw', top: '6.5vh', width: '94vw', height: '18.5vh', boxShadow: '0 0 3vw rgba(34,211,238,0.45)' }}
+        >
+          <h1
+            className="m-0 whitespace-nowrap font-grotesk font-bold uppercase leading-none text-cyan-50"
+            style={{ fontSize: '6.4vw', letterSpacing: '0.05em', textShadow: '0 0 0.25em rgba(34,211,238,0.95), 0 0 0.7em rgba(34,211,238,0.55)' }}
+          >
+            Reactor Sequence
+          </h1>
+        </div>
+      )}
+
+      {/* Red timer + round number */}
+      <div
+        className={`absolute flex flex-col items-center border-red-500/60 bg-black/70 backdrop-blur-sm ${portrait ? '-translate-x-1/2' : ''}`}
+        style={{
+          ...(portrait ? { left: '50vw', top: '27vh' } : { right: '1.5vw', top: '2.5vh' }),
+          minWidth: U(10),
+          padding: `${U(0.7)} ${U(1.4)}`,
+          borderWidth: U(0.2),
+          borderRadius: U(1),
+          boxShadow: `0 0 ${U(2)} rgba(239,68,68,0.45)`,
+          ...(portrait ? { flexDirection: 'row', gap: U(2) } : {}),
+        }}
+        data-testid="hud"
+      >
+        <div
+          className={`font-display font-black leading-none tabular-nums text-red-500 ${urgent ? 'animate-[timer-urgent_1s_ease-in-out_infinite]' : ''}`}
+          style={{ fontSize: U(4.4), textShadow: `0 0 ${U(1.2)} rgba(239,68,68,0.9)` }}
+          data-testid="timer"
+          aria-label={`${seconds} seconds left`}
+        >
+          {seconds}
+        </div>
+        <div
+          className="font-ui font-bold uppercase text-white"
+          style={{ fontSize: U(1.6), letterSpacing: '0.18em', marginTop: portrait ? 0 : U(0.3) }}
+          data-testid="round"
+        >
+          Round {round}
+        </div>
+      </div>
+
+      {/* Both panels, scaled to fit the space between the title and the status line */}
+      <div
+        className="absolute left-0 flex items-center justify-center"
+        style={{ top: panelsTop, width: '100vw', height: `calc(${panelsBottom} - ${panelsTop})`, containerType: 'size' }}
+      >
+        <div
+          className="pointer-events-auto flex justify-center"
+          style={{
+            // panels are 64 x 33.4 (side by side) or 30.2 x 70.4 (stacked) in their own cqw units
+            width: portrait ? 'min(314cqw, 135cqh)' : 'min(148cqw, 284cqh, 100vw)',
+            flexShrink: 0, // may be wider than the screen; only the centred panels inside are visible
+            containerType: 'inline-size',
+          }}
+        >
+          {panels(portrait)}
+        </div>
+      </div>
+
+      {/* Status line */}
+      <div
+        className={`absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-black/70 font-ui font-bold uppercase ${statusColor}`}
+        style={{ left: '50vw', top: statusY, fontSize: U(1.5), padding: `${U(0.35)} ${U(1.6)}`, letterSpacing: '0.15em' }}
+        aria-live="polite"
+        data-testid="status"
+      >
+        {status}
+      </div>
     </>
   )
 }

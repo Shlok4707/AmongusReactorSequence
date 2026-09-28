@@ -1,4 +1,4 @@
-import Stage from '../components/Stage'
+import Stage, { artY } from '../components/Stage'
 import NeonButton from '../components/NeonButton'
 import { pointsForRounds } from '../game/constants'
 
@@ -9,8 +9,20 @@ const valueClass =
 export default function FinalPage({ roundsCompleted, onHome }) {
   const points = pointsForRounds(roundsCompleted)
 
+  // Centred horizontally; sits on the floor (90% of the artwork) but never lower than 95.5vh.
+  const backButton = (
+    <div
+      className="pointer-events-auto absolute"
+      style={{ left: '50vw', top: artY('final bg', 0.9, { max: '95.5vh' }), width: 'min(100vw, 130vh)', height: 0, containerType: 'inline-size' }}
+    >
+      <NeonButton onClick={onHome} style={{ left: 0, top: 0 }} size="sm">
+        Back to Home
+      </NeonButton>
+    </div>
+  )
+
   return (
-    <Stage name="final bg">
+    <Stage name="final bg" overlay={backButton}>
       {/* Inside the empty field under the painted "ROUNDS PLAYED" label */}
       <div
         className={`${valueClass} text-[3cqw] text-white [text-shadow:0_0_1cqw_rgba(96,165,250,1),0_0_2.4cqw_rgba(59,130,246,0.8)]`}
@@ -30,11 +42,6 @@ export default function FinalPage({ roundsCompleted, onHome }) {
       >
         {points.toLocaleString('en-US')}
       </div>
-
-      {/* Centred at the bottom of the page */}
-      <NeonButton onClick={onHome} style={{ left: '50%', top: '90%' }} size="sm">
-        Back to Home
-      </NeonButton>
     </Stage>
   )
 }
